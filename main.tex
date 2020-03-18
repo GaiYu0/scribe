@@ -1,0 +1,177 @@
+\documentclass{article}
+\usepackage{eecs225a}
+%\usepackage{amsmath}
+\newcommand{\abs}[1]{\ensuremath{\left|#1\right|}}
+\renewcommand{\E}{\ensuremath{\mathbb{E}}}
+\newcommand{\Ep}{\ensuremath{\mathbb{E}_F}}
+\begin{document}
+\lecturetitle{22}{Lecture 22: Robust Location Estimation}{Vignesh Subramanian}{11/19/2019}
+In this lecture, we get a historical perspective into the robust estimation problem and discuss Huber's work \cite{huber} for robust estimation of a location parameter.
+
+The Huber loss function is given by,
+\begin{align}
+     \rho_{\mathsf{Huber}}(t) = \begin{cases} \frac{1}{2} t^2, & \abs{t} \leq k \\ k \abs{t} - \frac{1}{2}k^2, & \abs{t} > k \end{cases}. \label{eq:huber}
+\end{align}
+Here $k$ is a parameter and the idea behind the loss function is to penalize outliers (beyond $k$) linearly instead of quadratically. Figure~\ref{fig:huber} shows the Huber loss function for $k = 1$.
+\begin{figure}[h]
+    \centering
+    \includegraphics[width = 0.4 \textwidth ]{huber_loss.png}
+    \caption{The green line plots the Huber-loss function for $k =1$, and the blue line plots the quadratic function $\frac{1}{2}t^2$.}
+    \label{fig:huber}
+\end{figure}
+In this lecture we will get an intuitive understanding for the reasons behind the particular form of this function, quadratic in interior, linear in exterior and convex and will see that this loss function is optimal for one dimensional robust mean estimation for Gaussian location model. 
+
+First we describe the problem setting.
+\section{Problem Setting}
+
+Suppose we observe $X_1, X_2, \dots, X_n$ where $X_i-\mu \sim F \in \mathcal{F}$ are i.i.d. 
+Here,
+\begin{align}
+    \mathcal{F} = \{F \ | \ F= (1-\epsilon) G + \epsilon H, H \in \mathcal{M} \}, \label{eq:p}
+\end{align}
+where $G \in \mathcal{M}$ is some fixed distribution function which is usually assumed to have \emph{zero} mean, and $\mathcal{M}$ denotes the space of all probability measures. This describes the corruption model where the observed distribution is a convex combination of the true distribution $G(x)$ and an arbitrary corruption distribution $H$. It is a location model since we assume $X - \mu$ has distribution $F$ where $\mu \in \mathbb{R}$ is unknown. The goal here is to estimate the parameter $\mu$.\\
+
+First we must determine how we evaluate estimators and in the paper, Huber restricted his attention to $M$-estimators of the form,
+\begin{align*}
+    \hat{\mu} = \min_{t} \sum_{i=1}^n \rho(X_i - t).
+\end{align*}
+As an example if $\rho(t) = \frac{1}{2} t^2$, then $\hat{\mu} = \frac{1}{n} \sum_{i=1}^n X_i$, the empirical mean which is sensitive to outliers. 
+To evaluate estimators Huber looks at asymptotics. 
+\section{Asymptotics}
+\label{sec:2}
+Let $\psi(t) = \rho'(t)$. Then from first order condition of optimality, an optimizer $T_n$ must satisfy,
+\begin{align}
+    \sum_{i=1}^n \psi(X_i - T_n) = 0. \label{eq:foopt}
+\end{align}
+
+Assume for now $\mu = 0$, and $\Ep[\psi(X)] = 0$. This means that for the population version of (\ref{eq:foopt}), $T_n = 0$ is a solution. We now assume that $T_n\to 0$ as $n\to \infty$, and we will provide a proof sketch showing $T_n$ is asymptotically normal and compute its asymptotic variance. 
+
+From \eqref{eq:foopt}, using the first order approximation for the term $\psi(X_i - T_n) $ around the point $X_i$ and using the mean-value theorem, for some $0 \leq \theta \leq 1$ we have,
+\begin{align*}
+    \sum_{i=1}^n \psi(X_i) - T_n \sum_{i=1}^n \psi'(X_i - \theta T_n) = 0. 
+\end{align*}
+Rearranging we get,
+\begin{align*}
+    \sqrt{n} T_n = \frac{\frac{1}{\sqrt{n}} \sum_{i=1}^n \psi(X_i)}{\frac{1}{n}\sum_{i=1}^n \psi'(X_i - \theta T_n)}.
+\end{align*}
+Since we have $\Ep[\psi(X)] = 0$, the numerator by the Central Limit Theorem converges weakly to \\ \mbox{$N \sim \mathcal{N}(0, \Ep[\psi(X)^2])$}. Further since we assumed $T_n \rightarrow 0$ as $n \rightarrow \infty$ then from the weak law of large numbers the denominator converges weakly to $\Ep[\psi'(X)]$. Thus we have,
+\begin{align*}
+    \sqrt{n} (T_n -0) \xrightarrow{w} \mathcal{N}\left(0, \frac{\Ep[\psi(X)^2]}{(\Ep[\psi'(X)])^2} \right). 
+\end{align*}
+
+One basic result for $M$-estimators is showing the maximum likelihood estimator achieves the smallest asymptotic variance among all $M$-estimators. We provide a proof below. Letting $f(x)$ denote the density function for $F$, we have
+\begin{align*}
+    \Ep[\psi'(X)] &= \int_{a}^b f(x) \psi'(x) dx \\
+    &= f(x) \psi'(x) \Biggr|_a^b -  \int_{a}^b  \psi(x) f'(x) dx.
+\end{align*}
+If we assume that $f(a) = f(b) =  0 $ then we have, 
+\begin{align*}
+    \Ep[\psi'(X)] = -  \int_{a}^b  \psi(x) f'(x) dx.
+\end{align*}
+Thus,
+\begin{align*}
+    \frac{\Ep[\psi(X)^2]}{(\Ep[\psi'(X)])^2} &= \frac{\int_a^b \psi(x)^2 f(x) dx}{\left(\int_a^b \psi(x) \left( \frac{f'(x)}{f(x)}\right) f(x) dx\right)^2}\\
+    &\geq \frac{1}{\left( \frac{f'(x)}{f(x)}\right)^2 f(x) dx},
+\end{align*}
+where we used the Cauchy-Schwarz inequality. Observe that the RHS does not depend on $\psi$ and the inequality is tight when $\psi(x) \propto -\frac{f'(x)}{f(x)}$ which results in $f(t) \propto e^{-\frac{\rho(t)}{A}}$ for some constant $A$. Thus minimizing $\rho(t)$ is equivalent to finding the maximum likelihood estimator. When $f(x)$ is a Gaussian density function, then $\rho$ is the squared-loss function and the optimizer $T_n$ is the empirical mean. 
+
+%Next we compute the optimal $\rho$ for $F$ as in \eqref{eq:p} by analyzing the function $V(\psi, F) =   \frac{\Ep[\psi(X)^2]}{(\Ep[\psi'(X)])^2}$ by treating it as payoff function for a two player game.
+
+\section{Two player game and Huber's Theorem}
+Consider a two player game with payoff function given by $-V(\psi, F)$. Here $\psi$ is the action chosen by the statistician to maximize the payoff (minimize the asymptotic variance) and $F$ is chosen by the adversary to minimize the payoff (maximize the asymptotic variance). 
+
+\begin{theorem}
+Assume $G$ is symmetric around 0, log-concave with density function $g(x)$ with convex support. Define
+\begin{align}
+    \mathcal{F}_{\mathsf{S}} = \{F \ | \ F= (1-\epsilon) G + \epsilon H, H \text{ symmetric around }0 \}
+\end{align}
+
+The two-player game under the assumptions describe above has a saddle point $(\psi_0, F_0)$ i.e.,
+\begin{align*}
+    \sup\limits_{F\in \mathcal{F}_{\mathsf{S}}} V(\psi_0, F) = V(\psi_0, F_0) = \inf\limits_{\psi} V(\psi, F_0). 
+\end{align*}
+First we describe the form of $f_0(x)$ which is the density function of $F_0$. Let $[t_0, t_1]$ be the interval where $\abs{\frac{g'(x)}{g(x)}} \leq k$. We know that this interval exists since $g(x)$ is log-concave with convex support. Here $k$ is the solution to the equation 
+\begin{align}
+    \frac{1}{1-\epsilon} = \int_{t_0}^{t_1} g(t) dt + \frac{g(t_0) + g(t_1)}{k}.\label{eq:k}
+\end{align}
+Then,
+\begin{align}
+    f_0(t) &= \begin{cases} (1-\epsilon) g(t_0) e^{k(t- t_0)}, & t \leq t_0 \\ 
+    (1-\epsilon) g(t), & t_0 < t < t_1\\
+    (1- \epsilon) g(t_1) e^{-k(t- t_1)}, & t \geq t_1
+    \end{cases}\label{eq:f0t}\\
+    \psi_0(t) &= -\frac{f'_0(t)}{f_0(t)}.
+\end{align}
+
+\label{huber}
+
+\end{theorem}
+Before we look at the proof of this theorem we look at an example.\\
+\begin{example}
+Let $g(t) = \frac{1}{\sqrt{2\pi}} e^{-\frac{t^2}{2}}$.  Then $-t_0= t_1 = k$. We can solve either by binary search or line search for $k$ using the equation,
+\begin{align*}
+    \frac{1}{1- \epsilon} = \int_{-k}^k g(t) dt + \frac{2g(k)}{k}.
+\end{align*}
+The optimal loss function to use in this case is the Huber loss function given by ~\eqref{eq:huber}.
+\begin{align*}
+     \rho_{\mathsf{Huber}}(t) = \begin{cases} \frac{1}{2} t^2, & \abs{t} \leq k \\ k \abs{t} - \frac{1}{2}k^2, & \abs{t} > k \end{cases}. 
+\end{align*}
+Note that for a generic distribution $g(t)$ the dependence of $t_0 $ and $t_1$ on $k$ can be highly non-linear and it is not easy to solve for $k$ using ~\eqref{eq:k}.
+\end{example}\\
+Next we look at the proof for Theorem \ref{huber}.\\
+\begin{proof}
+First we verify that the distribution $H$ determined by $F_0$ and $G$ is indeed a distribution i.e. its density function $h(t)$ is non-negative and integrates to one. We have,
+\begin{align}
+    \epsilon h_0(t) = \begin{cases} (1 - \epsilon)(g(t_0)e^{k(t-t_0)} - g(t)), & t \leq t_0\\ 0, & t_0 < t < t_1\\ (1-\epsilon)(g(t_1)e^{-k(t-t_1)} - g(t)), & t \geq t_1\end{cases}. \label{eq:h0t}
+\end{align}
+
+Since $g(t)$ and $f_0(t)$ integrate to one, $h(t)$ integrates to one. To show non-negativity of $h(t)$ we use the fact that $g(t)$ is log-concave, which implies $-\log(g(t))$ is a convex function. For any $t\leq t_0$, 
+\begin{align*}
+    -\log(g(t)) & \geq -\log(g(t_0)) - k (t- t_0),\\
+    \implies  g(t) &\leq g(t_0) e^{k(t-t_0)}.
+\end{align*}
+where we used the the facts $\frac{g'(t_0)}{g_(t_0)} = k$ and $(\log(g(t))' = \frac{g'(t)}{g(t)}$. The proof for the case $t \geq t_1$ follows via a similar argument. Next we need to show that $V(\psi_0, F_0)$ is a saddle point. 
+
+We have,
+\begin{align*}
+    V(\psi_0, F_0) = \inf\limits_\psi V(\psi, F_0),
+\end{align*}
+because for given $F_0$, $\psi_0$ was optimal and resulted in the optimizer being the maximum likelihood estimator as discussed in Section \ref{sec:2}. Next we show that,
+
+\begin{align*}
+    V(\psi_0, F_0) = \sup\limits_{F\in \mathcal{F}_{\mathsf{S}}} V(\psi_0, F).
+\end{align*}
+
+For any $F\in \mathcal{F}_{\mathsf{S}}$ we have
+\begin{align*}
+    V(\psi_0, F) =   \frac{\Ep[\psi_0(X)^2]}{(\Ep[\psi'_0(X)])^2}.
+\end{align*}
+We can rewrite the numerator as,
+\begin{align*}
+    \Ep[\psi_0(X)^2] &= (1- \epsilon) \E_G[\psi_0(X)^2] + \epsilon\E_{H}[\psi_0(X)^2]\\
+    &\leq  (1- \epsilon) \E_G[\psi_0(X)^2] + \epsilon k^2,
+\end{align*}
+where we upper $\E_H[\psi_0(X)^2]$ using $\psi_0(t) = -\frac{f'_0(t)}{f(t)}$ and the form of $f_0(t)$ from \eqref{eq:f0t} which results in $\abs{\psi(t)} = k $ for $t \leq t_0$ or $t \geq t_1$ and $\abs{\psi(t)} = \abs{\frac{g'(t)}{g(t)}} \leq k$ for $t_0 < t < t_1$. Note that $f_0(t)$ results in $h_0(t) = 0 $ for $t_0 < t < t_1$ and thus maximizes the numerator.
+
+
+
+Similarly the denominator can be written as,
+\begin{align*}
+    (\Ep[\psi'_0(X)])^2 &= ((1-\epsilon) \E_G([\psi'_0(X)])+\epsilon \E_{H}([\psi'_0(X)]))^2 \\
+    & \geq ((1-\epsilon) \E_G([\psi'_0(X)]))^2,
+\end{align*}
+where we used the fact that $\psi_0' \geq 0$ pointwise and $\psi_0'(t) = 0$ for $t \leq t_0$ or $t \geq t_1$.
+
+Again note that $f_0(t)$ results in $h_0(t) = 0$ for $t_0 < t < t_1$ and minimizes the denominator. Thus $F_0$ is the maximizer of $V(\psi_0, F)$ among all $F\in \mathcal{F}_{\mathsf{S}}$. 
+\end{proof}
+\section{Summary}
+
+There were several criticisms of Huber's work including those on the assumptions that $G$ and $H$ are symmetric, and the requirement that $\epsilon$ be known in order to compute the Huber loss. Further in higher dimensions the breakdown point scales as $\frac{1}{1+d}$ which is undesirable. (From Wikipedia: Intuitively, the breakdown point of an estimator is the proportion of incorrect observations (e.g. arbitrarily large observations) an estimator can handle before giving an incorrect (e.g., arbitrarily large) result). In a subsequent paper Huber removes the assumptions that $G, H$ are symmetric and shows that the Huber $M$-estimator is exactly minimax for coverage probability in robust location estimation for Gaussian models. 
+%od estimator. For instance when $\rho(t) = \frac{1}{2}t^2$, then the maximum likelihood estimator would give $T_n$ as the empirical mean. Note that if the loss function is not strictly convex as in the case of Huber-loss then the optimizer is not unique. 
+
+
+
+\bibliographystyle{IEEEtran}
+\bibliography{ref.bib}
+
+\end{document}\grid
